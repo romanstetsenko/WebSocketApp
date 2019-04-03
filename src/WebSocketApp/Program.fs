@@ -17,17 +17,19 @@ open Microsoft.AspNetCore.Http
 // ---------------------------------
 // Web app
 // ---------------------------------
+let tryGetEnv = System.Environment.GetEnvironmentVariable >> function null | "" -> None | x -> Some x
+let port = "SERVER_PORT" |> tryGetEnv |> Option.map uint16 |> Option.defaultValue 5000us
 
 let indexHandler (name : string) =
     let greetings = sprintf "Hello %s, from Giraffe!" name
-    let model     = { Text = greetings }
+    let model     = { Text = greetings; Port = port }
     razorHtmlView "Index" (Some model) None None
 
 let handlePostMessage =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         task {
             let! message = ctx.BindJsonAsync<Message>()
-            do! sendMessageToSockets message.Text
+            //do! sendMessageToSockets message.Text
             return! next ctx
         }
 
@@ -88,8 +90,7 @@ let configureLogging (builder : ILoggingBuilder) =
            .AddConsole()
            .AddDebug() |> ignore
 
-let tryGetEnv = System.Environment.GetEnvironmentVariable >> function null | "" -> None | x -> Some x
-let port = "SERVER_PORT" |> tryGetEnv |> Option.map uint16 |> Option.defaultValue 5000us
+
 
 [<EntryPoint>]
 let main _ =
@@ -102,7 +103,7 @@ let main _ =
         .UseWebRoot(webRoot)
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
-        .UseUrls("http://127.0.0.1:" + port.ToString() + "/")
+        .UseUrls("http://localhost:" + port.ToString() + "/", "http://10.251.166.204:" + port.ToString() + "/")
         .ConfigureLogging(configureLogging)
         .Build()
         .Run()

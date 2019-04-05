@@ -12,11 +12,11 @@ module ServerBuilder =
     open System.Reflection
     
     let start() =
-        let DemoClusterId = "localhost-demo"
-        let DemoServiceId = "localhost-demo-service"
-        let LocalhostSiloPort = 11111
-        let LocalhostGatewayPort = 30000
-        let LocalhostSiloAddress = IPAddress.Loopback
+        let demoClusterId = "localhost-demo"
+        let demoServiceId = "localhost-demo-service"
+        let localhostSiloPort = 11111
+        let localhostGatewayPort = 30000
+        let localhostSiloAddress = IPAddress.Loopback
         printfn "Running demo. Booting cluster might take some time ...\n"
         let configureAssemblies (apm : IApplicationPartManager) =
             apm.AddApplicationPart(typeof<IChatUser>.Assembly).WithCodeGeneration() |> ignore
@@ -26,20 +26,20 @@ module ServerBuilder =
         
         let sb = SiloHostBuilder()
         sb.Configure<ClusterOptions>(fun (options : ClusterOptions) -> 
-            options.ClusterId <- DemoClusterId
-            options.ServiceId <- DemoServiceId)
+            options.ClusterId <- demoClusterId
+            options.ServiceId <- demoServiceId)
         |> ignore
         sb.UseDevelopmentClustering
             (fun (options : DevelopmentClusterMembershipOptions) -> 
-            options.PrimarySiloEndpoint <- IPEndPoint(LocalhostSiloAddress, LocalhostSiloPort)) 
+            options.PrimarySiloEndpoint <- IPEndPoint(localhostSiloAddress, localhostSiloPort)) 
         |> ignore
-        sb.ConfigureEndpoints(LocalhostSiloAddress, LocalhostSiloPort, LocalhostGatewayPort) 
+        sb.ConfigureEndpoints(localhostSiloAddress, localhostSiloPort, localhostGatewayPort) 
         |> ignore
         sb.AddMemoryGrainStorageAsDefault() |> ignore
         sb.AddMemoryGrainStorage("PubSubStore") |> ignore
         sb.AddSimpleMessageStreamProvider("sms") |> ignore
         sb.UseInMemoryReminderService() |> ignore
-        sb.ConfigureApplicationParts(fun x -> configureAssemblies x) |> ignore
+        configureAssemblies |> sb.ConfigureApplicationParts |> ignore
         sb.UseOrleankka() |> ignore
         use host = sb.Build()
         host.StartAsync().Wait()

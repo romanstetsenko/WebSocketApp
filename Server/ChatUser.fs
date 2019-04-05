@@ -8,7 +8,7 @@ open Orleankka.FSharp
 type ChatUser() =
     inherit ActorGrain()
     
-    member this.send roomName message =
+    member this.Send roomName message =
         printfn "[server]: %s" message
         let room = ActorSystem.streamOf (this.System, "sms", roomName)
         room <! { UserName = this.Id
@@ -22,15 +22,15 @@ type ChatUser() =
                 match m with
                 | Join room -> 
                     let msg = sprintf "%s joined the room %s ..." this.Id room
-                    do! this.send room msg
+                    do! this.Send room msg
                     return none()
                 | Leave room -> 
                     let msg = sprintf "%s left the room %s!" this.Id room
-                    do! this.send room msg
+                    do! this.Send room msg
                     return none()
                 | Say(room, msg) -> 
                     let msg = sprintf "%s said: %s" this.Id msg
-                    do! this.send room msg
+                    do! this.Send room msg
                     return none()
             | _ -> return unhandled()
         }

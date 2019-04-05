@@ -19,7 +19,7 @@ module ChatClientBuilder =
     let create() =
         printfn "Please wait until Chat Server has completed boot and then press enter. \n"
         Console.ReadLine() |> ignore
-        let cb = new ClientBuilder()
+        let cb = ClientBuilder()
         cb.Configure<ClusterOptions>(fun (options : ClusterOptions) -> 
             options.ClusterId <- DemoClusterId
             options.ServiceId <- DemoServiceId)

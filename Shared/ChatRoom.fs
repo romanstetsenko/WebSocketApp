@@ -1,6 +1,5 @@
 ﻿namespace Messages
 
-type ChatRoomMessage = {
-   UserName:string
-   Text:string
-}
+type ChatRoomMessage =
+    { UserName : string
+      Text : string }

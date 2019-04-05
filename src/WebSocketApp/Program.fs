@@ -103,7 +103,7 @@ let main _ =
         .UseWebRoot(webRoot)
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
-        .UseUrls("http://localhost:" + port.ToString() + "/", "http://10.251.166.204:" + port.ToString() + "/")
+        .UseUrls("http://localhost:" + port.ToString() + "/", "http://*:" + port.ToString() + "/")
         .ConfigureLogging(configureLogging)
         .Build()
         .Run()

@@ -4,4 +4,5 @@ namespace WebSocketApp.Models
 type Message =
     {
         Text : string
+        Port: uint16
     }

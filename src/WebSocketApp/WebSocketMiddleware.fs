@@ -48,6 +48,7 @@ module Middleware =
 
     let keepConnectionAlive3 (actorSystem: IClientActorSystem) (id, ct) (ws : WebSocket) =
         let actor = ActorSystem.typedActorOf<IEndpoint, EndpointMsg>(actorSystem, id)
+        actor.Tell(EndpointMsg.SubscribeToTopic "PING").Wait()
         let notify event =
             printfn "[%s replied] %s" id event
             let sendBuffer = System.Text.Encoding.UTF8.GetBytes(event)

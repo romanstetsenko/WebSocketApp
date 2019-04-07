@@ -14,6 +14,9 @@ open Orleankka.FSharp
     
 type Endpoint () = 
     inherit  ActorGrain()
+    
+    let observers = ObserverCollection() :> IObserverCollection
+    
     interface IEndpoint
     override this.Receive(message) =
         task { 
@@ -21,7 +24,12 @@ type Endpoint () =
             | :? EndpointMsg as msg ->
                 match msg with
                 | SubscribeToTopic topic ->
-                    let msg = sprintf "%s subscribed to the topic %s ..." this.Id topic
+                    sprintf "%s subscribed to the topic %s ..." this.Id topic
+                    |> Text
+                    |> observers.Notify
+                    return none()
+                | Attach observer -> 
+                    observers.Add(observer)
                     return none()
             | _ -> return unhandled()
         }

@@ -41,8 +41,13 @@ module SocketEndpoint =
 
 module Middleware =
     open Microsoft.AspNetCore.Http
-    
-    let keepConnectionAlive2 (id, ct) (ws : WebSocket) =
+    open Orleankka.Client
+    open Giraffe.Core
+    open Orleankka.FSharp
+    open Messages
+
+    let keepConnectionAlive3 (actorSystem: IClientActorSystem) (id, ct) (ws : WebSocket) =
+        let actor = ActorSystem.typedActorOf<IEndpoint, EndpointMsg>(actorSystem, id)
         let notify event =
             printfn "[%s replied] %s" id event
             let sendBuffer = System.Text.Encoding.UTF8.GetBytes(event)
@@ -50,7 +55,6 @@ module Middleware =
                 (new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Text, 
                  true, ct)
         task { 
-            use mh = new MsgHub(id, ct, notify)
             let buffer : byte [] = Array.zeroCreate 1024
             while ws.State = WebSocketState.Open do
                 let! res = ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct)
@@ -59,7 +63,7 @@ module Middleware =
                     let cmd =
                         System.Text.Encoding.UTF8.GetString
                             (buffer, 0, res.Count)
-                    do! mh.Handle cmd
+                    actor.Notify(EndpointMsg.SubscribeToTopic cmd)
                 | WebSocketMessageType.Binary -> 
                     do! ws.CloseOutputAsync
                             (WebSocketCloseStatus.InvalidPayloadData, 
@@ -67,29 +71,54 @@ module Middleware =
                              ct)
                 | WebSocketMessageType.Close | _ -> ()
         }
+    //let keepConnectionAlive2 (id, ct) (ws : WebSocket) =
+    //    let notify event =
+    //        printfn "[%s replied] %s" id event
+    //        let sendBuffer = System.Text.Encoding.UTF8.GetBytes(event)
+    //        ws.SendAsync
+    //            (new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Text, 
+    //             true, ct)
+    //    task { 
+    //        use mh = new MsgHub(id, ct, notify)
+    //        let buffer : byte [] = Array.zeroCreate 1024
+    //        while ws.State = WebSocketState.Open do
+    //            let! res = ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct)
+    //            match res.MessageType with
+    //            | WebSocketMessageType.Text -> 
+    //                let cmd =
+    //                    System.Text.Encoding.UTF8.GetString
+    //                        (buffer, 0, res.Count)
+    //                do! mh.Handle cmd
+    //            | WebSocketMessageType.Binary -> 
+    //                do! ws.CloseOutputAsync
+    //                        (WebSocketCloseStatus.InvalidPayloadData, 
+    //                         "Sorry, WebSocketMessageType.Binary isn't supported yet.", 
+    //                         ct)
+    //            | WebSocketMessageType.Close | _ -> ()
+    //    }
     
-    let keepConnectionAlive (connectionId, ct) (webSocket : WebSocket) =
-        task { 
-            let se = SocketEndpoint.create (connectionId, webSocket, ct)
-            let buffer : byte [] = Array.zeroCreate 1024
-            while webSocket.State = WebSocketState.Open do
-                let! res = webSocket.ReceiveAsync
-                               (new ArraySegment<byte>(buffer), ct)
-                match res.MessageType with
-                | WebSocketMessageType.Text -> 
-                    let msg =
-                        System.Text.Encoding.UTF8.GetString
-                            (buffer, 0, res.Count)
-                    do! SocketEndpoint.handle msg se
-                    do! SocketEndpoint.say ("NO! " + msg) se
-                | WebSocketMessageType.Binary -> 
-                    do! webSocket.CloseOutputAsync
-                            (WebSocketCloseStatus.InvalidPayloadData, 
-                             "Sorry, WebSocketMessageType.Binary isn't supported yet.", 
-                             ct)
-                | WebSocketMessageType.Close | _ -> 
-                    do! SocketEndpoint.close "requested by client" se
-        }
+    //let keepConnectionAlive (connectionId, ct) (webSocket : WebSocket) =
+    //    task { 
+    //        let se = SocketEndpoint.create (connectionId, webSocket, ct)
+    //        let buffer : byte [] = Array.zeroCreate 1024
+    //        while webSocket.State = WebSocketState.Open do
+    //            let! res = webSocket.ReceiveAsync
+    //                           (new ArraySegment<byte>(buffer), ct)
+    //            match res.MessageType with
+    //            | WebSocketMessageType.Text -> 
+    //                let msg =
+    //                    System.Text.Encoding.UTF8.GetString
+    //                        (buffer, 0, res.Count)
+    //                do! SocketEndpoint.handle msg se
+    //                do! SocketEndpoint.say ("NO! " + msg) se
+    //            | WebSocketMessageType.Binary -> 
+    //                do! webSocket.CloseOutputAsync
+    //                        (WebSocketCloseStatus.InvalidPayloadData, 
+    //                         "Sorry, WebSocketMessageType.Binary isn't supported yet.", 
+    //                         ct)
+    //            | WebSocketMessageType.Close | _ -> 
+    //                do! SocketEndpoint.close "requested by client" se
+    //    }
     
     type WebSocketMiddleware(next : RequestDelegate) =
         member __.Invoke(ctx : HttpContext) =
@@ -98,7 +127,8 @@ module Middleware =
                     match ctx.WebSockets.IsWebSocketRequest with
                     | true -> 
                         let! webSocket = ctx.WebSockets.AcceptWebSocketAsync()
-                        do! keepConnectionAlive 
+                        do! keepConnectionAlive3 
+                                (ctx.GetService<IClientActorSystem>())
                                 (ctx.Connection.Id, ctx.RequestAborted) 
                                 webSocket
                     | false -> ctx.Response.StatusCode <- 400

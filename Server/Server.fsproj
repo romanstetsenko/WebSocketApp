@@ -5,11 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ChatUser.fs" />
+    <Compile Include="Endpoint.fs" />
     <Compile Include="ServerBuilder.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.3.0" />
     <PackageReference Include="Microsoft.Orleans.Server" Version="2.3.0" />
     <PackageReference Include="Orleankka.FSharp.Runtime" Version="2.3.1" />
     <PackageReference Include="TaskBuilder.fs" Version="2.1.0" />

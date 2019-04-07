@@ -90,12 +90,15 @@ let configureLogging (builder : ILoggingBuilder) =
            .AddConsole()
            .AddDebug() |> ignore
 
-
+let configureBackEnd (services : IServiceCollection)= 
+    let clientSystem = Client.ChatClientBuilder.create()
+    services.AddSingleton(clientSystem) |> ignore
 
 [<EntryPoint>]
 let main _ =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
+    do Server.ServerBuilder.start()
     WebHostBuilder()
         .UseKestrel()
         .UseContentRoot(contentRoot)
@@ -103,6 +106,7 @@ let main _ =
         .UseWebRoot(webRoot)
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
+        .ConfigureServices(configureBackEnd)
         .UseUrls("http://localhost:" + port.ToString() + "/", "http://*:" + port.ToString() + "/")
         .ConfigureLogging(configureLogging)
         .Build()

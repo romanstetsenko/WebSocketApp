@@ -1,7 +1,6 @@
 ﻿namespace Server
 
 module ServerBuilder =
-    open Messages
     open Orleankka.Cluster
     open Orleans
     open Orleans.ApplicationParts
@@ -10,6 +9,7 @@ module ServerBuilder =
     open Orleans.Storage
     open System.Net
     open System.Reflection
+    open Messages
     
     let start() =
         let demoClusterId = "localhost-demo"
@@ -17,11 +17,11 @@ module ServerBuilder =
         let localhostSiloPort = 11111
         let localhostGatewayPort = 30000
         let localhostSiloAddress = IPAddress.Loopback
-        printfn "Running demo. Booting cluster might take some time ...\n"
+        printfn "Running demo. Booting cluster might take some time"
         let configureAssemblies (apm : IApplicationPartManager) =
-            apm.AddApplicationPart(typeof<IChatUser>.Assembly).WithCodeGeneration() |> ignore
-            apm.AddApplicationPart(typeof<MemoryGrainStorage>.Assembly).WithCodeGeneration() 
-            |> ignore
+            apm.AddApplicationPart(typeof<IEndpoint>.Assembly).WithCodeGeneration() |> ignore
+            apm.AddApplicationPart(typeof<IPEndPoint>.Assembly).WithCodeGeneration() |> ignore
+            apm.AddApplicationPart(typeof<MemoryGrainStorage>.Assembly).WithCodeGeneration() |> ignore
             apm.AddApplicationPart(Assembly.GetExecutingAssembly()).WithCodeGeneration() |> ignore
         
         let sb = SiloHostBuilder()
@@ -41,7 +41,5 @@ module ServerBuilder =
         sb.UseInMemoryReminderService() |> ignore
         configureAssemblies |> sb.ConfigureApplicationParts |> ignore
         sb.UseOrleankka() |> ignore
-        use host = sb.Build()
-        host.StartAsync().Wait()
-        printfn "Finished booting cluster...\n"
-        System.Console.ReadLine() |> ignore
+        sb.Build().StartAsync().Wait()
+        printfn "Finished booting cluster \n"

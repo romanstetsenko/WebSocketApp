@@ -18,7 +18,7 @@ module Middleware =
             match event with
             | :? EndpointNotification as notification ->
                 match notification with 
-                | Text text-> 
+                | Subscribed text | Notification text-> 
                     let sendBuffer = System.Text.Encoding.UTF8.GetBytes(text)
                     ws.SendAsync(new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Text, true, ct).Wait()
             | _ -> () //sorry
@@ -37,7 +37,7 @@ module Middleware =
                     let msg =
                         System.Text.Encoding.UTF8.GetString
                             (buffer, 0, res.Count)
-                    actor.Notify(EndpointMsg.SubscribeToTopic msg)
+                    actor.Notify(EndpointMsg.Topic msg)
                 | WebSocketMessageType.Binary -> 
                     do! ws.CloseOutputAsync
                             (WebSocketCloseStatus.InvalidPayloadData, 

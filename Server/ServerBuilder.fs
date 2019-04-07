@@ -10,6 +10,13 @@ module ServerBuilder =
     open System.Net
     open System.Reflection
     open Messages
+    open FSharp.Control.Tasks.V2
+    open System.Threading
+    open System.Threading.Tasks
+    open Microsoft.Extensions.DependencyInjection
+    open System
+    open Orleankka
+    open Orleankka.FSharp
     
     let start() =
         let demoClusterId = "localhost-demo"
@@ -40,6 +47,17 @@ module ServerBuilder =
         sb.AddSimpleMessageStreamProvider("sms") |> ignore
         sb.UseInMemoryReminderService() |> ignore
         configureAssemblies |> sb.ConfigureApplicationParts |> ignore
+        let aa = System.Func<IServiceProvider, CancellationToken, Task>(fun s  _ct ->
+            task {
+
+                let system = s.GetRequiredService<IActorSystem>()
+                let randomId = Guid.NewGuid().ToString()
+                let actor = ActorSystem.typedActorOf<IReciter, ReciterMsg>(system, randomId)
+                do! actor <! Start
+                ()
+            } :> _
+        )
+        sb.AddStartupTask(aa) |> ignore
         sb.UseOrleankka() |> ignore
         sb.Build().StartAsync().Wait()
         printfn "Finished booting cluster \n"

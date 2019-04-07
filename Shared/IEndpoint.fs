@@ -4,10 +4,14 @@ open Orleankka.FSharp
 open Orleankka
 
 type EndpointMsg = 
-    | SubscribeToTopic of string
+    | Topic of string
     | Attach of ObserverRef
 
-type EndpointNotification = | Text of string
+type EndpointNotification = | Notification of string | Subscribed of string
 
 type IEndpoint = 
     inherit IActorGrain<EndpointMsg>
+
+type ReciterMsg = | Start
+type IReciter =
+    inherit IActorGrain<ReciterMsg>

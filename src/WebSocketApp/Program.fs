@@ -13,6 +13,7 @@ open WebSocketApp.Models
 open Middleware
 open FSharp.Control.Tasks.V2
 open Microsoft.AspNetCore.Http
+open System.Threading
 
 // ---------------------------------
 // Web app
@@ -96,9 +97,10 @@ let configureBackEnd (services : IServiceCollection)=
 
 [<EntryPoint>]
 let main _ =
+    do Server.ServerBuilder.start()
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    do Server.ServerBuilder.start()
+    async { WsClientsSwarm.createAndRun CancellationToken.None 50} |> Async.Start
     WebHostBuilder()
         .UseKestrel()
         .UseContentRoot(contentRoot)
